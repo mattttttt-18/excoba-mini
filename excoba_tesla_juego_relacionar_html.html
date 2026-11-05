@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma Total de Repaso e Entrenamiento Infinito EXCOBA / TESLA</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Outfit', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', dark: '#0f172a' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #111827 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+      user-select: none;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .glass-modal {
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .card-item {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      touch-action: manipulation;
+    }
+    .card-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.35);
+    }
+    .card-selected {
+      border-color: #6366f1 !important;
+      background: rgba(99, 102, 241, 0.3) !important;
+      box-shadow: 0 0 18px rgba(99, 102, 241, 0.6) !important;
+      transform: scale(1.02);
+    }
+    .card-matched {
+      border-color: #22c55e !important;
+      background: rgba(34, 197, 94, 0.25) !important;
+      opacity: 0.65;
+      cursor: default !important;
+      pointer-events: none;
+    }
+    .card-wrong {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.3) !important;
+      animation: shake 0.4s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .drop-zone { transition: all 0.2s ease; min-height: 120px; }
+    .drop-zone.drag-over { border-color: #6366f1; background: rgba(99, 102, 241, 0.2); transform: scale(1.01); }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+  </style>
+</head>
+<body class="font-sans antialiased text-slate-100 flex flex-col min-h-screen">
+
+  <!-- ENCABEZADO / NAVBAR -->
+  <header class="glass-card sticky top-0 z-40 border-b border-slate-700/50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="showDashboard()">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-brain text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white via-indigo-200 to-emerald-300 bg-clip-text text-transparent">
+            EXCOBA / TESLA Master Pro
+          </h1>
+          <p class="text-xs text-slate-400">Generación Procedural e Infinita de Reactivos</p>
+        </div>
+      </div>
+
+      <!-- Barra de Estado del Juego -->
+      <div id="game-stats" class="hidden flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700">
+        <div class="flex items-center text-emerald-400 font-semibold" title="Aciertos">
+          <i class="fa-solid fa-circle-check mr-1.5"></i>
+          <span id="stat-score">0</span>
+        </div>
+        <div class="flex items-center text-rose-400 font-semibold" title="Errores">
+          <i class="fa-solid fa-circle-xmark mr-1.5"></i>
+          <span id="stat-errors">0</span>
+        </div>
+        <div class="flex items-center text-amber-400 font-semibold" title="Racha">
+          <i class="fa-solid fa-fire mr-1.5"></i>
+          <span id="stat-streak">0</span>
+        </div>
+        <div class="flex items-center text-indigo-300 font-semibold" title="Tiempo">
+          <i class="fa-solid fa-stopwatch mr-1.5"></i>
+          <span id="stat-timer">00:00</span>
+        </div>
+        <div class="flex items-center text-cyan-300 font-semibold" title="Precisión">
+          <i class="fa-solid fa-bullseye mr-1.5"></i>
+          <span id="stat-accuracy">100%</span>
+        </div>
+      </div>
+
+      <!-- Botones Principales -->
+      <div class="flex items-center space-x-2">
+        <button id="btn-sound" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700" title="Sonido">
+          <i class="fa-solid fa-volume-high text-base"></i>
+        </button>
+        <button onclick="showGuideModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+          <i class="fa-solid fa-book-open"></i>
+          <span class="hidden sm:inline">Guía Maestro</span>
+        </button>
+        <button onclick="showDashboard()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden sm:inline">Menú</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- MENU PRINCIPAL / DASHBOARD -->
+    <section id="view-dashboard" class="space-y-6">
+      <div class="text-center max-w-3xl mx-auto space-y-2">
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+          Entrenador Generativo Infinito EXCOBA
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base">
+          Los datos numéricos, titulares periodísticos, cruces genéticos de Punnett y ejemplos cotidianos se generan aleatoriamente en cada partida para ofrecerte un repaso ilimitado.
+        </p>
+      </div>
+
+      <!-- Grid de Módulos Temáticos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Módulo 1: Español -->
+        <div onclick="selectTopic('espanol')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-indigo-500/50 group transition flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-newspaper"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-indigo-300 transition">Español y Lectura</h3>
+              <p class="text-slate-400 text-sm mt-1">Titulares de noticias dinámicos, tipos de texto, géneros literarios y clasificación de obras clásicas.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-400"></i> Titulares Procedurales</span>
+            <span class="text-indigo-400 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Practicar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+        <!-- Módulo 2: Ética -->
+        <div onclick="selectTopic('etica')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-emerald-500/50 group transition flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-emerald-300 transition">Ética y Civismo</h3>
+              <p class="text-slate-400 text-sm mt-1">Artículos constitucionales, causas/consecuencias de migración, valores, ONG/APN/CPC y Poderes del Estado.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-layer-group mr-1"></i> 7 Categorías</span>
+            <span class="text-emerald-400 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Practicar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+        <!-- Módulo 3: Historia -->
+        <div onclick="selectTopic('historia')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-amber-500/50 group transition flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-landmark"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-amber-300 transition">Historia Universal y MX</h3>
+              <p class="text-slate-400 text-sm mt-1">Culturas mesoamericanas, cronología revolucionaria, conquistas, guerras mundiales e IDH internacional.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-clock-rotate-left mr-1 text-amber-400"></i> Cronología Viva</span>
+            <span class="text-amber-400 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Practicar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+        <!-- Módulo 4: Biología -->
+        <div onclick="selectTopic('biologia')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-rose-500/50 group transition flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-dna"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-rose-300 transition">Biología y Genética</h3>
+              <p class="text-slate-400 text-sm mt-1">Cuadro de Punnett interactivo, virus vs bacterias, respiración, botánica interactiva y mitosis/meiosis.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-microscope mr-1 text-rose-400"></i> Punnett & Anatomía</span>
+            <span class="text-rose-400 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Practicar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+        <!-- Módulo 5: Química -->
+        <div onclick="selectTopic('quimica')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-cyan-500/50 group transition flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-flask-vial"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-cyan-300 transition">Química y Estequiometría</h3>
+              <p class="text-slate-400 text-sm mt-1">Separación de mezclas procedurale, cálculos de masa y moles interactivos, pH, enlaces y modelos atómicos.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-calculator mr-1 text-cyan-400"></i> Calculadora Estequiométrica</span>
+            <span class="text-cyan-400 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Practicar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+        <!-- Módulo 6: Examen Aleatorio / Simulador Total -->
+        <div onclick="selectTopic('random')" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-purple-500/50 group transition flex flex-col justify-between bg-gradient-to-br from-indigo-900/30 via-slate-800 to-purple-900/30">
+          <div class="space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-shuffle"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white group-hover:text-purple-300 transition">Simulador Global Infinito</h3>
+              <p class="text-slate-400 text-sm mt-1">Generación aleatoria de 10 ejercicios mixtos dinámicos extraídos de todas las asignaturas.</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+            <span><i class="fa-solid fa-star text-amber-400 mr-1"></i> Modo Simulación Real</span>
+            <span class="text-purple-300 font-medium group-hover:translate-x-1 transition flex items-center gap-1">Iniciar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PANEL DE SELECCIÓN DE SUBTEMAS -->
+    <section id="view-subtopic-select" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <button onclick="showDashboard()" class="text-slate-400 hover:text-white transition flex items-center gap-2 text-sm font-medium">
+          <i class="fa-solid fa-arrow-left"></i> Volver a Materias
+        </button>
+        <span id="subtopic-topic-title" class="text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-800/50">
+          Materia
+        </span>
+      </div>
+
+      <div class="text-center max-w-xl mx-auto space-y-2">
+        <h2 id="subtopic-heading" class="text-2xl sm:text-3xl font-bold text-white">Actividades Disponibles</h2>
+        <p class="text-slate-400 text-sm">Elige la actividad que deseas repasar. Cada intento creará combinaciones dinámicas.</p>
+      </div>
+
+      <div id="subtopics-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto"></div>
+    </section>
+
+    <!-- ÁREA DE JUEGO MODO 1: COLUMNAS -->
+    <section id="view-game-match" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-4">
+        <div>
+          <span id="match-topic-badge" class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800/50">Materia</span>
+          <h2 id="match-activity-title" class="text-xl sm:text-2xl font-bold text-white mt-2">Título del Ejercicio</h2>
+          <p id="match-activity-desc" class="text-xs sm:text-sm text-slate-400 mt-1">Toca un elemento a la izquierda y luego su correspondencia en la derecha.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="restartCurrentActivity()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-right"></i> Generar Nuevos Ejemplos</button>
+          <button onclick="changeSubtopicMenu()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5"><i class="fa-solid fa-list"></i> Cambiar Ejercicio</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-circle-dot text-indigo-400"></i> Conceptos / Reactivos</h3>
+          <div id="match-col-left" class="space-y-3"></div>
+        </div>
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-bullseye text-emerald-400"></i> Pareja o Definición</h3>
+          <div id="match-col-right" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÁREA DE JUEGO MODO 2: CLASIFICACIÓN / BUCKETS -->
+    <section id="view-game-sort" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-4">
+        <div>
+          <span id="sort-topic-badge" class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 px-3 py-1 rounded-full border border-purple-800/50">Materia</span>
+          <h2 id="sort-activity-title" class="text-xl sm:text-2xl font-bold text-white mt-2">Clasificación en Contenedores</h2>
+          <p id="sort-activity-desc" class="text-xs sm:text-sm text-slate-400 mt-1">Toca un elemento arriba para seleccionarlo y luego toca la caja correspondiente abajo.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="restartCurrentActivity()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-right"></i> Generar Nuevos Ejemplos</button>
+          <button onclick="changeSubtopicMenu()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5"><i class="fa-solid fa-list"></i> Cambiar Ejercicio</button>
+        </div>
+      </div>
+
+      <div class="glass-card p-4 rounded-2xl border border-indigo-500/30">
+        <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-boxes-packing"></i> Elementos Pendientes por Clasificar</h3>
+        <div id="sort-items-pool" class="flex flex-wrap gap-2.5 min-h-[60px] p-2 bg-slate-900/50 rounded-xl border border-slate-800"></div>
+      </div>
+
+      <div id="sort-buckets-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- ÁREA DE JUEGO MODO 3: DIAGRAMA INTERACTIVO ANATÓMICO (PLANTAS Y FLOR) -->
+    <section id="view-game-diagram" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-400 bg-rose-950/60 px-3 py-1 rounded-full border border-rose-800/50">Biología Visual</span>
+          <h2 id="diagram-activity-title" class="text-xl sm:text-2xl font-bold text-white mt-2">Identificación Botánica interactiva</h2>
+          <p id="diagram-activity-desc" class="text-xs sm:text-sm text-slate-400 mt-1">Selecciona una etiqueta y colócala en el indicador anatómico correspondiente.</p>
+        </div>
+        <button onclick="changeSubtopicMenu()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5"><i class="fa-solid fa-list"></i> Cambiar Ejercicio</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-center">
+        <!-- SVG interactivo con puntos hotspot -->
+        <div class="md:col-span-2 glass-card p-6 rounded-2xl flex flex-col items-center justify-center relative min-h-[320px]" id="diagram-svg-container">
+          <!-- El contenido SVG de la flor / planta se renderizará dinámicamente -->
+        </div>
+
+        <div class="space-y-4">
+          <div class="glass-card p-4 rounded-2xl border border-slate-700 space-y-3">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Etiquetas para Colocar:</h4>
+            <div id="diagram-labels-pool" class="flex flex-wrap gap-2"></div>
+          </div>
+          <div id="diagram-info-box" class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 text-xs text-slate-300 leading-relaxed min-h-[80px]">
+            Toca una etiqueta de arriba y luego presiona el círculo rojo correspondiente en el diagrama.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÁREA DE JUEGO MODO 4: CÁLCULOS / ESTEQUIOMETRÍA Y GENÉTICA -->
+    <section id="view-game-calc" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-4">
+        <div>
+          <span id="calc-topic-badge" class="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-800/50">Cálculo Cuantitativo</span>
+          <h2 id="calc-title" class="text-xl sm:text-2xl font-bold text-white mt-2">Práctica Numérica Interactiva</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">Los datos se recalculan en cada intento. Realiza los cálculos y escribe la respuesta exacta.</p>
+        </div>
+        <button onclick="generateCalcProblem()" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium transition flex items-center gap-1.5"><i class="fa-solid fa-dice"></i> Generar Nuevo Problema Numérico</button>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl max-w-2xl mx-auto space-y-5">
+        <div class="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3">
+          <p id="calc-question-text" class="text-base text-slate-100 font-medium leading-relaxed"></p>
+          <p id="calc-given-data" class="text-xs text-indigo-300 font-mono bg-indigo-950/50 p-2.5 rounded-lg border border-indigo-800/40"></p>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Ingresa tu respuesta numérica (o porcentaje %):</label>
+          <div class="flex gap-3">
+            <input type="number" id="calc-user-input" step="any" placeholder="Ej. 25" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono text-lg focus:outline-none focus:border-indigo-500">
+            <button onclick="verifyCalcAnswer()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-600/30">Verificar</button>
+          </div>
+        </div>
+
+        <div id="calc-feedback-box" class="hidden p-4 rounded-xl text-sm leading-relaxed"></div>
+      </div>
+    </section>
+
+    <!-- MODAL VICTORIA -->
+    <div id="modal-victory" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+      <div class="glass-modal max-w-md w-full p-6 sm:p-8 rounded-3xl text-center space-y-6 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
+        <div class="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-4xl mx-auto shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-white">¡Módulo Completado!</h3>
+          <p class="text-slate-300 text-sm">Has dominado los conceptos trabajados en esta ronda.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+          <div><p class="text-xs text-slate-400">Aciertos</p><p id="summary-score" class="text-xl font-bold text-emerald-400">0</p></div>
+          <div><p class="text-xs text-slate-400">Errores</p><p id="summary-errors" class="text-xl font-bold text-rose-400">0</p></div>
+          <div><p class="text-xs text-slate-400">Tiempo</p><p id="summary-time" class="text-xl font-bold text-indigo-300">00:00</p></div>
+        </div>
+        <div class="flex flex-col gap-2.5">
+          <button onclick="restartCurrentActivity()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Nueva ronda con ejemplos inéditos</button>
+          <button onclick="changeSubtopicMenu()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition border border-slate-700 flex items-center justify-center gap-2"><i class="fa-solid fa-forward"></i> Elegir otro tema</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE APUNTES MAESTRO EXCOBA -->
+    <div id="modal-guide" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+      <div class="glass-modal max-w-4xl w-full max-h-[85vh] flex flex-col rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+          <div class="flex items-center gap-2 text-indigo-400 font-bold">
+            <i class="fa-solid fa-book-bookmark text-lg"></i>
+            <span>Resumen Sintetizado - 100% Examen EXCOBA / TESLA</span>
+          </div>
+          <button onclick="closeGuideModal()" class="text-slate-400 hover:text-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-6 text-slate-300 text-sm leading-relaxed">
+          <div class="p-4 bg-blue-950/40 rounded-xl border border-blue-800/40">
+            <h5 class="font-bold text-blue-300 text-base mb-1">Español</h5>
+            <p class="text-xs text-slate-300">Textos: Literarios (función poética), Científicos (objetivos), Publicitarios (consumidor), Periodísticos (noticia, crónica, entrevista). Obras: Cantar del Mío Cid (Épico), Hamlet/Macbeth/Edipo Rey (Dramático), Cien años de soledad/Madame Bovary (Novela), Chac Mool/Aura (Cuento).</p>
+          </div>
+          <div class="p-4 bg-emerald-950/40 rounded-xl border border-emerald-800/40">
+            <h5 class="font-bold text-emerald-300 text-base mb-1">Ética y Civismo</h5>
+            <p class="text-xs text-slate-300">Art. 3 (Educación Básica), Art. 24 (Religión), Art. 27 (Propiedad de Tierra/Agua), Art. 123 (Trabajo Digno). Poderes: Ejecutivo (Aplica ley y presupuesto), Judicial (Leyes, Juicios, DDHH), Legislativo (Diputados y Senadores, redactan leyes).</p>
+          </div>
+          <div class="p-4 bg-amber-950/40 rounded-xl border border-amber-800/40">
+            <h5 class="font-bold text-amber-300 text-base mb-1">Historia</h5>
+            <p class="text-xs text-slate-300">Olmecas (Cultura madre, Preclásico), Mayas (Popol Vuh, Vigesimal), Teotihuacanos (Ciudad Dioses, Clásico), Mexicas (Tenochtitlán, Huitzilopochtli). Revolución: Cananea/Acayucan (Antes) &rarr; San Luis/Ayala (Durante) &rarr; Maximato (Después).</p>
+          </div>
+          <div class="p-4 bg-rose-950/40 rounded-xl border border-rose-800/40">
+            <h5 class="font-bold text-rose-300 text-base mb-1">Biología y Genética</h5>
+            <p class="text-xs text-slate-300">Respiración: Pulmonar (Mamíferos/Aves), Branquial (Peces), Cutánea (Lombriz/Rana), Traqueal (Insectos), Estomas (Plantas). Genética: Punnett XᴰXᵈ daltónica portadora vs XᵈY daltónico. Mitosis (Somáticas, diploides) vs Meiosis (Gametos, haploides).</p>
+          </div>
+          <div class="p-4 bg-cyan-950/40 rounded-xl border border-cyan-800/40">
+            <h5 class="font-bold text-cyan-300 text-base mb-1">Química y Separación</h5>
+            <p class="text-xs text-slate-300">Separación: Destilación (Tequila/Alcohol), Centrifugación (Sangre/Orina), Filtración (Té/Café). Átomos: Dalton (Esferas sólidas), Thomson (Electrón), Rutherford (Núcleo y protones), Bohr (Niveles circulares).</p>
+          </div>
+        </div>
+        <div class="px-6 py-3 border-t border-slate-700 bg-slate-900/50 text-right">
+          <button onclick="closeGuideModal()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition">Cerrar Guía</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+    <p>Centro de Desarrollo Cognitivo (TESLA) - Plataforma Interactiva para Examen EXCOBA.</p>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       GENERADOR PROCEDURAL E INÉDITO DE REACTIVOS EXCOBA
+       ========================================================================== */
+
+    // Banco de Generadores Dinámicos de Titulares Periodísticos
+    function generateDynamicNews() {
+      const policiacos = [
+        "Incautan 2 toneladas de enervantes en retén carretero",
+        "Mujer atropella a su vecina tras fuerte discusión",
+        "Decomisan lote ilegal de armas en puerto comercial",
+        "Detienen a banda de asaltantes en zona bancaria",
+        "Capturan a sospechoso por el robo a joyería céntrica",
+        "Aseguran tractocamión con mercancía apócrifa"
+      ];
+      const economia = [
+        "Se recupera la industria automotriz en América del Norte",
+        "Aumenta la tasa de empleo manufacturero en la región",
+        "Caída del tipo de cambio estimula las exportaciones locales",
+        "Inflación registra disminución histórica en el último trimestre",
+        "Banco central ajusta tasas de interés para promover inversión",
+        "Nuevos tratados comerciales impulsan la agricultura de exportación"
+      ];
+      const ciencia = [
+        "Argentina es líder en transgénesis en Latinoamérica",
+        "Descubren nuevo exoplaneta con potencial hídrico en atmósfera",
+        "Desarrollan vacuna sintética de última generación contra el dengue",
+        "Lanzan satélite meteorológico para monitoreo climático global",
+        "Científicos logran secuenciar el genoma de planta desértica",
+        "Avance biomédico logra regenerar tejido hepático en laboratorio"
+      ];
+
+      // Seleccionar 2 al azar de cada uno
+      const pick2 = (arr) => shuffleArray(arr).slice(0, 2);
+      const items = [];
+      pick2(policiacos).forEach(text => items.push({ text, category: "Policiaco" }));
+      pick2(economia).forEach(text => items.push({ text, category: "Economía" }));
+      pick2(ciencia).forEach(text => items.push({ text, category: "Ciencia y tecnología" }));
+      return shuffleArray(items);
+    }
+
+    // Banco de Generadores Dinámicos de Mezclas para Química
+    function generateDynamicMixtures() {
+      const destilacion = ["Agua y alcohol", "Tequila artesanal", "Vino tinto", "Mezcal de agave", "Petróleo crudo y sus derivados"];
+      const filtracion = ["Té de jamaica", "Jugo de naranja con pulpa", "Agua con arena de playa", "Café de grano colado", "Infusión de manzanilla"];
+      const decantacion = ["Agua con aceite comestible", "Aceite vegetal y vinagre", "Glicerina y aceite sintético", "Agua y gasolina"];
+      const imantacion = ["Limadura de hierro con azufre", "Arena con virutas de acero", "Harina contaminada con grapas"];
+      const centrifugacion = ["Muestra de sangre entera", "Análisis de orina clínica", "Crema de leche entera"];
+      const evaporacion = ["Sal marina disuelta en agua", "Azúcar disuelta en agua hirviendo", "Sulfato de cobre en solución acuosa"];
+
+      const res = [];
+      res.push({ text: destilacion[Math.floor(Math.random()*destilacion.length)], category: "Destilación" });
+      res.push({ text: filtracion[Math.floor(Math.random()*filtracion.length)], category: "Filtración" });
+      res.push({ text: decantacion[Math.floor(Math.random()*decantacion.length)], category: "Decantación" });
+      res.push({ text: imantacion[Math.floor(Math.random()*imantacion.length)], category: "Imantación" });
+      res.push({ text: centrifugacion[Math.floor(Math.random()*centrifugacion.length)], category: "Centrifugación" });
+      res.push({ text: evaporacion[Math.floor(Math.random()*evaporacion.length)], category: "Evaporación" });
+      return shuffleArray(res);
+    }
+
+    /* ==========================================================================
+       ESTRUCTURA GENERAL DEL BANCO DE DATOS
+       ========================================================================== */
+    const DATA_EXCOBA = {
+      espanol: {
+        title: "Español y Literatura",
+        subtopics: [
+          {
+            id: "esp_noticias_gen",
+            title: "Secciones de Noticias (Generador Inédito)",
+            type: "sort",
+            description: "Clasifica los titulares periodísticos generados dinámicamente en su sección correspondiente.",
+            categories: ["Policiaco", "Economía", "Ciencia y tecnología"],
+            getItems: generateDynamicNews
+          },
+          {
+            id: "esp_textos",
+            title: "Características de los Textos (Pág 3)",
+            type: "sort",
+            description: "Clasifica las características textuales según la tipología oficial.",
+            categories: ["Literario", "Científico", "Publicitario", "Periodístico", "Explicativo"],
+            items: [
+              { text: "Recurre a la función poética y emotiva del lenguaje", category: "Literario" },
+              { text: "Lleva a una creación personal y altamente subjetiva", category: "Literario" },
+              { text: "Fuerte llamado de atención persuasivo al consumidor", category: "Publicitario" },
+              { text: "Llenguaje formal, objetivo y sustentado en investigaciones", category: "Científico" },
+              { text: "La crónica y la entrevista son sus géneros emblemáticos", category: "Periodístico" },
+              { text: "Presenta el porqué y la justificación de los fenómenos", category: "Explicativo" }
+            ]
+          },
+          {
+            id: "esp_generos",
+            title: "Obras Literarias y Géneros (Pág 4)",
+            type: "match",
+            description: "Empareja la obra o autor con su género o forma literaria exacta.",
+            pairs: [
+              { left: "El cantar del Mío Cid", right: "Épico" },
+              { left: "Macbeth / Hamlet / Edipo Rey", right: "Dramático" },
+              { left: "Cien años de soledad / Madame Bovary / Guerra y Paz", right: "Novela" },
+              { left: "El almohadón de plumas / El escarabajo de oro / Chac Mool / Aura", right: "Cuento" },
+              { left: "Cien sonetos de amor / A un madrigal", right: "Poema" },
+              { left: "La Celestina / La vida es un sueño", right: "Obra de Teatro" }
+            ]
+          }
+        ]
+      },
+      etica: {
+        title: "Ética y Civismo",
+        subtopics: [
+          {
+            id: "eti_migracion",
+            title: "Causas y Consecuencias de la Migración (Pág 7)",
+            type: "sort",
+            description: "Clasifica los factores en CAUSAS o CONSECUENCIAS.",
+            categories: ["CAUSA", "CONSECUENCIA"],
+            items: [
+              { text: "Gobiernos autoritarios y centralizados", category: "CAUSA" },
+              { text: "Crimen organizado e inseguridad", category: "CAUSA" },
+              { text: "La violencia generalizada en el país de origen", category: "CAUSA" },
+              { text: "La falta de oportunidades empleo y desarrollo", category: "CAUSA" },
+              { text: "Xenofobia y rechazo en la sociedad receptora", category: "CONSECUENCIA" },
+              { text: "Aculturación y pérdida de identidad regional", category: "CONSECUENCIA" },
+              { text: "Desintegración de los pueblos de origen", category: "CONSECUENCIA" },
+              { text: "Separación dolorosa de familias", category: "CONSECUENCIA" }
+            ]
+          },
+          {
+            id: "eti_articulos",
+            title: "Artículos Constitucionales (Pág 8)",
+            type: "match",
+            description: "Relaciona cada artículo clave con su derecho asignado.",
+            pairs: [
+              { left: "Artículo 3°", right: "Educación laica, gratuita y obligatoria en nivel básico" },
+              { left: "Artículo 24°", right: "Libertad para profesar la creencia religiosa elegida" },
+              { left: "Artículo 27°", right: "Tenencia de tierras y aguas corresponden originalmente a la nación" },
+              { left: "Artículo 123°", right: "Derecho al trabajo digno y regulación de contratos laborales" }
+            ]
+          },
+          {
+            id: "eti_valores",
+            title: "Valores, Costumbres y Tradiciones (Pág 9)",
+            type: "sort",
+            description: "Ubica los actos sociales en su categoría respectiva.",
+            categories: ["Valor colectivo", "Costumbres sociales", "Tradición cultural"],
+            items: [
+              { text: "Decir gracias al recibir ayuda", category: "Costumbres sociales" },
+              { text: "Lavarse los dientes después de cada comida", category: "Costumbres sociales" },
+              { text: "Celebrar el Día de Muertos en noviembre", category: "Tradición cultural" },
+              { text: "Bailar el vals en una fiesta de 15 años", category: "Tradición cultural" },
+              { text: "Celebrar el Día de las Madres", category: "Tradición cultural" },
+              { text: "Solidarizarse con damnificados de un desastre natural", category: "Valor colectivo" }
+            ]
+          },
+          {
+            id: "eti_poderes",
+            title: "Poderes de la Unión (Pág 23)",
+            type: "sort",
+            description: "Diferencia las atribuciones entre Ejecutivo, Judicial y Legislativo.",
+            categories: ["Ejecutivo", "Judicial", "Legislativo"],
+            items: [
+              { text: "Administra el presupuesto del Estado y nombra su gabinete", category: "Ejecutivo" },
+              { text: "El que se encarga de ejecutar las leyes", category: "Ejecutivo" },
+              { text: "Resuelve casos graves sobre Derechos Humanos e imparte juicios", category: "Judicial" },
+              { text: "Magistrados y Suprema Corte de Justicia", category: "Judicial" },
+              { text: "Expedir leyes, programar presupuesto anual y formar estados", category: "Legislativo" },
+              { text: "Diputados y senadores en el Congreso", category: "Legislativo" }
+            ]
+          }
+        ]
+      },
+      historia: {
+        title: "Historia de México y Universal",
+        subtopics: [
+          {
+            id: "his_culturas",
+            title: "Culturas Mesoamericanas (Pág 14)",
+            type: "match",
+            description: "Asocia cada rasgo representativo a su cultura de origen.",
+            pairs: [
+              { left: "Olmeca", right: "Cultura madre, Preclásico, Cabezas colosales, San Lorenzo y La Venta" },
+              { left: "Maya", right: "Popol Vuh, Numeración vigesimal con cero, Templo de Kukulcán" },
+              { left: "Teotihuacana", right: "Ciudad de los dioses, Clásico, Pirámides del Sol y de la Luna" },
+              { left: "Mexicas", right: "Tenochtitlán, Huitzilopochtli, Templo Mayor, Piedra del Sol" }
+            ]
+          },
+          {
+            id: "his_revolucion",
+            title: "Revolución Mexicana (Pág 15)",
+            type: "sort",
+            description: "Organiza cronológicamente los acontecimientos revolucionarios.",
+            categories: ["Antes", "Durante", "Después"],
+            items: [
+              { text: "Huelga de Cananea y Rebelión de Acayucan", category: "Antes" },
+              { text: "Flores Magón funda el PLM y conspiración de Aquiles Serdán", category: "Antes" },
+              { text: "Yaquis deportados a Cuba", category: "Antes" },
+              { text: "Plan de San Luis y Decena Trágica", category: "Durante" },
+              { text: "Plan de Ayala (Emiliano Zapata contra Madero)", category: "Durante" },
+              { text: "Pancho Villa toma Zacatecas", category: "Durante" },
+              { text: "Asesinato de Zapata y Carranza", category: "Durante" },
+              { text: "Periodo del Maximato", category: "Después" },
+              { text: "Presidencia interina de Adolfo de la Huerta", category: "Después" }
+            ]
+          },
+          {
+            id: "his_guerras",
+            title: "Primera vs Segunda Guerra Mundial (Pág 19, 20)",
+            type: "sort",
+            description: "Clasifica los hechos en el conflicto bélico correcto.",
+            categories: ["1° Guerra Mundial", "2° Guerra Mundial"],
+            items: [
+              { text: "Triple Entente y Triple Alianza", category: "1° Guerra Mundial" },
+              { text: "Asesinato del Archiduque Francisco Fernando", category: "1° Guerra Mundial" },
+              { text: "Tratado de Versalles y Sociedad de Naciones", category: "1° Guerra Mundial" },
+              { text: "Invasión alemana a Polonia", category: "2° Guerra Mundial" },
+              { text: "Construcción del Muro de Berlín y división alemana", category: "2° Guerra Mundial" },
+              { text: "Creación de la ONU y la OTAN", category: "2° Guerra Mundial" },
+              { text: "Plan Marshall de reconstrucción europea", category: "2° Guerra Mundial" }
+            ]
+          }
+        ]
+      },
+      biologia: {
+        title: "Biología y Salud",
+        subtopics: [
+          {
+            id: "bio_punnett_calc",
+            title: "Cuadro de Punnett Dinámico (Pág 38, 39)",
+            type: "calc",
+            description: "Calcula los porcentajes mendelianos según los fenotipos/genotipos solicitados.",
+            calcType: "punnett"
+          },
+          {
+            id: "bio_diagram_plant",
+            title: "Anatomía de la Flor y Planta (Pág 35, 36)",
+            type: "diagram",
+            description: "Ubica correctamente los nombres de la anatomía floral e identifica sus órganos."
+          },
+          {
+            id: "bio_respiracion",
+            title: "Tipos de Respiración (Pág 27)",
+            type: "sort",
+            description: "Clasifica los organismos por su mecanismo respiratorio principal.",
+            categories: ["Pulmonar", "Branquial", "Cutánea", "Traqueal", "Estomas"],
+            items: [
+              { text: "Delfín, Aves, Humano, Reptiles", category: "Pulmonar" },
+              { text: "Peces, Tiburones, Moluscos, Crustáceos", category: "Branquial" },
+              { text: "Sanguijuelas, Salamandras, Lombriz de tierra, Ranas", category: "Cutánea" },
+              { text: "Arañas, Grillos, Cucarachas, Pulgas (Insectos)", category: "Traqueal" },
+              { text: "Abeto, Musgo, Lirios, Helechos (Plantas)", category: "Estomas" }
+            ]
+          },
+          {
+            id: "bio_micro",
+            title: "Virus vs Bacterias (Pág 34)",
+            type: "sort",
+            description: "Clasifica según las patologías o características microscópicas.",
+            categories: ["VIRUS", "BACTERIAS"],
+            items: [
+              { text: "Tamaño ultrapequeño de 0.02 a 0.3 micrómetros", category: "VIRUS" },
+              { text: "Rabia, Dengue, Varicela, Rotavirus, VPH, Resfriado", category: "VIRUS" },
+              { text: "Sarampión, Rubéola, Diarrea viral, Fiebre amarilla", category: "VIRUS" },
+              { text: "Organismos procariotas de 0.5 a 5 micras", category: "BACTERIAS" },
+              { text: "Botulismo, Tétanos, Tuberculosis, Cólera, Peste bubónica", category: "BACTERIAS" },
+              { text: "Fiebre tifoidea, Neumonía bacteriana, Amigdalitis, Difteria", category: "BACTERIAS" }
+            ]
+          }
+        ]
+      },
+      quimica: {
+        title: "Química e Industria",
+        subtopics: [
+          {
+            id: "qui_calc_gen",
+            title: "Calculadora Estequiométrica (Pág 57)",
+            type: "calc",
+            description: "Resuelve problemas con datos numéricos aleatorios basados en las fórmulas oficiales del EXCOBA.",
+            calcType: "stoichiometry"
+          },
+          {
+            id: "qui_separacion_gen",
+            title: "Métodos de Separación (Generador Inédito)",
+            type: "sort",
+            description: "Separa mezclas de uso cotidiano utilizando el método adecuado.",
+            categories: ["Destilación", "Filtración", "Decantación", "Imantación", "Centrifugación", "Evaporación"],
+            getItems: generateDynamicMixtures
+          },
+          {
+            id: "qui_atomos",
+            title: "Modelos Atómicos (Pág 45)",
+            type: "match",
+            description: "Relaciona al científico con su descubrimiento atómico exacto.",
+            pairs: [
+              { left: "Dalton", right: "Átomos como esferas sólidas e indivisibles" },
+              { left: "Thomson", right: "Descubrió el electrón (Modelo del pudín de pasas)" },
+              { left: "Rutherford", right: "Núcleo atómico denso y protones (Partículas Alfa)" },
+              { left: "Bohr", right: "Niveles de energía circulares definidos para electrones" }
+            ]
+          },
+          {
+            id: "qui_ph",
+            title: "Ácidos, Bases y Anfóteras (Pág 55)",
+            type: "sort",
+            description: "Clasifica según las características de pH y substancias.",
+            categories: ["Ácido", "Base", "Anfótera"],
+            items: [
+              { text: "Vinagre, Aspirina, Vitamina C, Jugos gástricos, Refresco", category: "Ácido" },
+              { text: "Vuelve rojo el papel tornasol", category: "Ácido" },
+              { text: "Sosa cáustica, Limpiador de hornos, Jabón, Leche de magnesia", category: "Base" },
+              { text: "Vuelve azul el papel tornasol / Sabor amargo", category: "Base" },
+              { text: "Agua pura (H₂O)", category: "Anfótera" }
+            ]
+          }
+        ]
+      }
+    };
+
+    /* ==========================================================================
+       ESTADO DEL SISTEMA Y CONTROL DE NAVEGACIÓN
+       ========================================================================== */
+    let currentTopicKey = null;
+    let currentSubtopicObj = null;
+    let soundEnabled = true;
+
+    let scoreCount = 0;
+    let errorCount = 0;
+    let streakCount = 0;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    let selectedLeftCard = null;
+    let selectedSortItem = null;
+    let selectedDiagramLabel = null;
+    let currentCalcData = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'correct') {
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15);
+          gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now); osc.stop(now + 0.2);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now); osc.stop(now + 0.25);
+        } else if (type === 'win') {
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.35);
+          gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now); osc.stop(now + 0.4);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('btn-sound').innerHTML = soundEnabled 
+        ? '<i class="fa-solid fa-volume-high text-base"></i>' 
+        : '<i class="fa-solid fa-volume-xmark text-base text-rose-400"></i>';
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    /* VISTAS Y NAVEGACIÓN LIMPIA */
+    function showDashboard() {
+      stopTimer();
+      document.getElementById('view-dashboard').classList.remove('hidden');
+      document.getElementById('view-subtopic-select').classList.add('hidden');
+      document.getElementById('view-game-match').classList.add('hidden');
+      document.getElementById('view-game-sort').classList.add('hidden');
+      document.getElementById('view-game-diagram').classList.add('hidden');
+      document.getElementById('view-game-calc').classList.add('hidden');
+      document.getElementById('game-stats').classList.add('hidden');
+      document.getElementById('modal-victory').classList.add('hidden');
+      document.getElementById('modal-guide').classList.add('hidden');
+    }
+
+    function selectTopic(topicKey) {
+      currentTopicKey = topicKey;
+      document.getElementById('modal-victory').classList.add('hidden');
+      document.getElementById('modal-guide').classList.add('hidden');
+
+      if (topicKey === 'random') {
+        const allSubs = [];
+        Object.keys(DATA_EXCOBA).forEach(k => {
+          DATA_EXCOBA[k].subtopics.forEach(s => allSubs.push({ sub: s, parentTitle: DATA_EXCOBA[k].title }));
+        });
+        const randSub = allSubs[Math.floor(Math.random() * allSubs.length)];
+        launchActivity(randSub.sub, randSub.parentTitle);
+        return;
+      }
+
+      const topicData = DATA_EXCOBA[topicKey];
+      document.getElementById('subtopic-topic-title').innerText = topicData.title;
+
+      const container = document.getElementById('subtopics-container');
+      container.innerHTML = '';
+
+      topicData.subtopics.forEach(sub => {
+        const card = document.createElement('div');
+        card.className = "glass-card p-5 rounded-2xl cursor-pointer hover:border-indigo-500/50 transition flex justify-between items-center group";
+        
+        let icon = "fa-solid fa-arrows-split-up-and-left";
+        let badge = "Relacionar";
+        let color = "text-emerald-400 bg-emerald-950/60 border-emerald-800/50";
+
+        if (sub.type === 'sort') {
+          icon = "fa-solid fa-boxes-stacked"; badge = "Clasificación"; color = "text-purple-400 bg-purple-950/60 border-purple-800/50";
+        } else if (sub.type === 'calc') {
+          icon = "fa-solid fa-calculator"; badge = "Cálculo"; color = "text-cyan-400 bg-cyan-950/60 border-cyan-800/50";
+        } else if (sub.type === 'diagram') {
+          icon = "fa-solid fa-diagram-project"; badge = "Anatomía Visual"; color = "text-rose-400 bg-rose-950/60 border-rose-800/50";
+        }
+
+        card.innerHTML = `
+          <div class="space-y-1.5 pr-4">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${color}">
+              <i class="${icon} mr-1"></i> ${badge}
+            </span>
+            <h4 class="text-lg font-bold text-white group-hover:text-indigo-300 transition">${sub.title}</h4>
+            <p class="text-xs text-slate-400">${sub.description}</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-play"></i>
+          </div>
+        `;
+        card.onclick = () => launchActivity(sub, topicData.title);
+        container.appendChild(card);
+      });
+
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-subtopic-select').classList.remove('hidden');
+    }
+
+    function changeSubtopicMenu() {
+      document.getElementById('modal-victory').classList.add('hidden');
+      document.getElementById('modal-guide').classList.add('hidden');
+      if (currentTopicKey) selectTopic(currentTopicKey);
+      else showDashboard();
+    }
+
+    function startStats() {
+      scoreCount = 0; errorCount = 0; streakCount = 0; secondsElapsed = 0;
+      updateStatsUI();
+      document.getElementById('game-stats').classList.remove('hidden');
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+        const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+        document.getElementById('stat-timer').innerText = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopTimer() { if (timerInterval) clearInterval(timerInterval); }
+
+    function updateStatsUI() {
+      document.getElementById('stat-score').innerText = scoreCount;
+      document.getElementById('stat-errors').innerText = errorCount;
+      document.getElementById('stat-streak').innerText = streakCount;
+      const total = scoreCount + errorCount;
+      const accuracy = total === 0 ? 100 : Math.round((scoreCount / total) * 100);
+      document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+    }
+
+    function launchActivity(subtopicObj, parentTitle) {
+      currentSubtopicObj = subtopicObj;
+      startStats();
+
+      document.getElementById('view-subtopic-select').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.add('hidden');
+
+      if (subtopicObj.type === 'match') setupMatchGame(subtopicObj, parentTitle);
+      else if (subtopicObj.type === 'sort') setupSortGame(subtopicObj, parentTitle);
+      else if (subtopicObj.type === 'diagram') setupDiagramGame(subtopicObj, parentTitle);
+      else if (subtopicObj.type === 'calc') setupCalcGame(subtopicObj, parentTitle);
+    }
+
+    function restartCurrentActivity() {
+      document.getElementById('modal-victory').classList.add('hidden');
+      if (currentSubtopicObj) launchActivity(currentSubtopicObj, "EXCOBA");
+    }
+
+    /* MODO 1: COLUMNAS */
+    function setupMatchGame(data, parentTitle) {
+      document.getElementById('view-game-match').classList.remove('hidden');
+      document.getElementById('view-game-sort').classList.add('hidden');
+      document.getElementById('view-game-diagram').classList.add('hidden');
+      document.getElementById('view-game-calc').classList.add('hidden');
+
+      document.getElementById('match-topic-badge').innerText = parentTitle;
+      document.getElementById('match-activity-title').innerText = data.title;
+      document.getElementById('match-activity-desc').innerText = data.description;
+
+      const colLeft = document.getElementById('match-col-left');
+      const colRight = document.getElementById('match-col-right');
+      colLeft.innerHTML = ''; colRight.innerHTML = '';
+      selectedLeftCard = null;
+
+      const pairs = data.pairs;
+      const leftItems = shuffleArray(pairs.map((p, idx) => ({ id: idx, text: p.left })));
+      const rightItems = shuffleArray(pairs.map((p, idx) => ({ id: idx, text: p.right })));
+
+      leftItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "card-item glass-card p-4 rounded-xl border border-slate-700/80 cursor-pointer flex items-center justify-between";
+        card.dataset.id = item.id;
+        card.innerHTML = `<span class="text-sm font-medium text-slate-200">${item.text}</span><i class="fa-regular fa-circle text-slate-500 text-sm ml-2"></i>`;
+        card.onclick = () => {
+          if (card.classList.contains('card-matched')) return;
+          document.querySelectorAll('#match-col-left .card-item').forEach(c => { if (!c.classList.contains('card-matched')) c.classList.remove('card-selected'); });
+          card.classList.add('card-selected');
+          selectedLeftCard = card;
+        };
+        colLeft.appendChild(card);
+      });
+
+      rightItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "card-item glass-card p-4 rounded-xl border border-slate-700/80 cursor-pointer flex items-center justify-between";
+        card.dataset.id = item.id;
+        card.innerHTML = `<span class="text-sm font-medium text-slate-200">${item.text}</span><i class="fa-regular fa-circle text-slate-500 text-sm ml-2"></i>`;
+        card.onclick = () => {
+          if (card.classList.contains('card-matched')) return;
+          if (!selectedLeftCard) {
+            card.classList.add('card-wrong'); setTimeout(() => card.classList.remove('card-wrong'), 400); return;
+          }
+          if (selectedLeftCard.dataset.id === card.dataset.id) {
+            playSound('correct');
+            selectedLeftCard.classList.remove('card-selected'); selectedLeftCard.classList.add('card-matched');
+            selectedLeftCard.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 text-sm ml-2";
+            card.classList.add('card-matched'); card.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 text-sm ml-2";
+            selectedLeftCard = null; scoreCount++; streakCount++; updateStatsUI();
+            if (scoreCount === pairs.length) { stopTimer(); playSound('win'); setTimeout(showVictoryModal, 600); }
+          } else {
+            playSound('wrong');
+            selectedLeftCard.classList.add('card-wrong'); card.classList.add('card-wrong');
+            errorCount++; streakCount = 0; updateStatsUI();
+            setTimeout(() => {
+              if (selectedLeftCard) selectedLeftCard.classList.remove('card-wrong', 'card-selected');
+              card.classList.remove('card-wrong'); selectedLeftCard = null;
+            }, 500);
+          }
+        };
+        colRight.appendChild(card);
+      });
+    }
+
+    /* MODO 2: CLASIFICACIÓN EN CONTENEDORES */
+    function setupSortGame(data, parentTitle) {
+      document.getElementById('view-game-sort').classList.remove('hidden');
+      document.getElementById('view-game-match').classList.add('hidden');
+      document.getElementById('view-game-diagram').classList.add('hidden');
+      document.getElementById('view-game-calc').classList.add('hidden');
+
+      document.getElementById('sort-topic-badge').innerText = parentTitle;
+      document.getElementById('sort-activity-title').innerText = data.title;
+      document.getElementById('sort-activity-desc').innerText = data.description;
+
+      const poolContainer = document.getElementById('sort-items-pool');
+      const bucketsContainer = document.getElementById('sort-buckets-container');
+      poolContainer.innerHTML = ''; bucketsContainer.innerHTML = '';
+      selectedSortItem = null;
+
+      data.categories.forEach(catName => {
+        const bucket = document.createElement('div');
+        bucket.className = "drop-zone glass-card p-4 rounded-2xl border border-slate-700/80 flex flex-col justify-between";
+        bucket.dataset.category = catName;
+        bucket.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-700/50 mb-3">
+            <h4 class="font-bold text-sm text-indigo-300 flex items-center gap-1.5"><i class="fa-solid fa-box-open text-indigo-400"></i> ${catName}</h4>
+            <span class="count-badge text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">0 items</span>
+          </div>
+          <div class="bucket-items-area flex flex-col gap-2 flex-1"></div>
+        `;
+        bucket.onclick = () => { if (selectedSortItem) assignItemToBucket(selectedSortItem, bucket); };
+        bucketsContainer.appendChild(bucket);
+      });
+
+      const itemsList = data.getItems ? data.getItems() : data.items;
+      data.currentTotalItems = itemsList.length;
+
+      const shuffledItems = shuffleArray(itemsList);
+      shuffledItems.forEach((itemObj, idx) => {
+        const chip = document.createElement('div');
+        chip.id = `sort-chip-${idx}`;
+        chip.className = "card-item bg-slate-800/90 hover:bg-slate-700 border border-slate-600/80 text-slate-100 text-xs font-medium px-3.5 py-2 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm";
+        chip.dataset.category = itemObj.category;
+        chip.innerText = itemObj.text;
+        chip.onclick = (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('#sort-items-pool .card-item').forEach(c => c.classList.remove('card-selected'));
+          chip.classList.add('card-selected');
+          selectedSortItem = chip;
+        };
+        poolContainer.appendChild(chip);
+      });
+    }
+
+    function assignItemToBucket(itemEl, bucketEl) {
+      if (itemEl.dataset.category === bucketEl.dataset.category) {
+        playSound('correct');
+        itemEl.classList.remove('card-selected', 'hover:bg-slate-700');
+        itemEl.classList.add('bg-emerald-950/60', 'border-emerald-500/50', 'text-emerald-200', 'cursor-default');
+        itemEl.onclick = null;
+        const area = bucketEl.querySelector('.bucket-items-area');
+        area.appendChild(itemEl);
+        const badge = bucketEl.querySelector('.count-badge');
+        badge.innerText = `${area.children.length} items`;
+        selectedSortItem = null; scoreCount++; streakCount++; updateStatsUI();
+        
+        const totalReq = currentSubtopicObj.currentTotalItems || currentSubtopicObj.items.length;
+        if (scoreCount === totalReq) { stopTimer(); playSound('win'); setTimeout(showVictoryModal, 600); }
+      } else {
+        playSound('wrong');
+        itemEl.classList.add('card-wrong'); errorCount++; streakCount = 0; updateStatsUI();
+        setTimeout(() => { itemEl.classList.remove('card-wrong', 'card-selected'); selectedSortItem = null; }, 500);
+      }
+    }
+
+    /* MODO 3: DIAGRAMA INTERACTIVO ANATÓMICO */
+    function setupDiagramGame(data, parentTitle) {
+      document.getElementById('view-game-diagram').classList.remove('hidden');
+      document.getElementById('view-game-match').classList.add('hidden');
+      document.getElementById('view-game-sort').classList.add('hidden');
+      document.getElementById('view-game-calc').classList.add('hidden');
+
+      document.getElementById('diagram-activity-title').innerText = data.title;
+      document.getElementById('diagram-activity-desc').innerText = data.description;
+
+      const svgContainer = document.getElementById('diagram-svg-container');
+      const labelsPool = document.getElementById('diagram-labels-pool');
+      labelsPool.innerHTML = '';
+      selectedDiagramLabel = null;
+
+      const parts = [
+        { name: "Estambre", x: 30, y: 35, desc: "Órgano masculino (Antera + Filamento)" },
+        { name: "Carpelo", x: 70, y: 35, desc: "Órgano femenino (Estigma + Estilo + Ovario)" },
+        { name: "Pétalo", x: 20, y: 20, desc: "Estructura de la corola para atraer polinizadores" },
+        { name: "Sépalo", x: 25, y: 70, desc: "Hojas verdes que protegen el botón floral" },
+        { name: "Ovario", x: 50, y: 60, desc: "Contiene los óvulos de la flor" },
+        { name: "Pedúnculo", x: 50, y: 85, desc: "Tallo que sostiene la flor" }
+      ];
+
+      // SVG floral interactivo estilizado
+      svgContainer.innerHTML = `
+        <svg viewBox="0 0 200 200" class="w-full max-w-[280px] h-auto drop-shadow-lg">
+          <path d="M100 120 L100 180" stroke="#16a34a" stroke-width="8" stroke-linecap="round"/>
+          <path d="M70 140 Q100 110 130 140 Q100 170 70 140" fill="#22c55e" opacity="0.6"/>
+          <ellipse cx="100" cy="110" rx="20" ry="25" fill="#eab308" opacity="0.8"/>
+          <path d="M100 85 Q70 50 100 15 Q130 50 100 85" fill="#f43f5e" opacity="0.7"/>
+          <path d="M100 85 Q40 80 20 110 Q60 130 100 85" fill="#f43f5e" opacity="0.7"/>
+          <path d="M100 85 Q160 80 180 110 Q140 130 100 85" fill="#f43f5e" opacity="0.7"/>
+          
+          ${parts.map((p, idx) => `
+            <g class="hotspot-group cursor-pointer" data-name="${p.name}" onclick="clickHotspot('${p.name}', this)">
+              <circle cx="${p.x * 2}" cy="${p.y * 2}" r="10" fill="#ef4444" stroke="#ffffff" stroke-width="2" class="animate-pulse"/>
+              <text x="${p.x * 2}" y="${p.y * 2 + 4}" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">${idx + 1}</text>
+            </g>
+          `).join('')}
+        </svg>
+      `;
+
+      shuffleArray(parts).forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = "px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-medium text-slate-200 transition";
+        btn.innerText = p.name;
+        btn.dataset.name = p.name;
+        btn.onclick = () => {
+          document.querySelectorAll('#diagram-labels-pool button').forEach(b => b.classList.remove('card-selected'));
+          btn.classList.add('card-selected');
+          selectedDiagramLabel = p;
+          document.getElementById('diagram-info-box').innerText = `Estructura seleccionada: ${p.name}. Toca el punto rojo interactivo en el dibujo.`;
+        };
+        labelsPool.appendChild(btn);
+      });
+    }
+
+    function clickHotspot(targetName, gEl) {
+      if (!selectedDiagramLabel) {
+        document.getElementById('diagram-info-box').innerText = "Por favor selecciona primero una etiqueta de la lista derecha.";
+        return;
+      }
+
+      if (selectedDiagramLabel.name === targetName) {
+        playSound('correct');
+        gEl.querySelector('circle').setAttribute('fill', '#22c55e');
+        gEl.querySelector('circle').classList.remove('animate-pulse');
+        
+        const labelBtn = document.querySelector(`#diagram-labels-pool button[data-name="${targetName}"]`);
+        if (labelBtn) { labelBtn.disabled = true; labelBtn.className = "px-3 py-1.5 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-xs font-medium text-emerald-300 opacity-60"; }
+        
+        document.getElementById('diagram-info-box').innerHTML = `<b>¡Correcto!</b> ${selectedDiagramLabel.name}: ${selectedDiagramLabel.desc}`;
+        selectedDiagramLabel = null;
+        scoreCount++; streakCount++; updateStatsUI();
+
+        if (scoreCount === 6) { stopTimer(); playSound('win'); setTimeout(showVictoryModal, 600); }
+      } else {
+        playSound('wrong');
+        errorCount++; streakCount = 0; updateStatsUI();
+        document.getElementById('diagram-info-box').innerText = "Ubicación incorrecta. Revisa el órgano anatómico e intenta de nuevo.";
+      }
+    }
+
+    /* MODO 4: CÁLCULOS / PUNNETT Y ESTEQUIOMETRÍA */
+    function setupCalcGame(data, parentTitle) {
+      document.getElementById('view-game-calc').classList.remove('hidden');
+      document.getElementById('view-game-match').classList.add('hidden');
+      document.getElementById('view-game-sort').classList.add('hidden');
+      document.getElementById('view-game-diagram').classList.add('hidden');
+      document.getElementById('calc-topic-badge').innerText = parentTitle;
+      generateCalcProblem();
+    }
+
+    function generateCalcProblem() {
+      document.getElementById('calc-feedback-box').classList.add('hidden');
+      document.getElementById('calc-user-input').value = '';
+
+      if (currentSubtopicObj && currentSubtopicObj.calcType === 'punnett') {
+        // Generador de ejercicios mendelianos / daltonismo
+        const rand = Math.random();
+        if (rand < 0.5) {
+          currentCalcData = {
+            q: "Si se cruza una madre portadora de daltonismo (XᴰXᵈ) con un padre daltónico (XᵈY), ¿cuál es el porcentaje de probabilidad (%) de tener un hijo varón daltónico?",
+            data: "Cuadro de Punnett: Madre = XᴰXᵈ, Padre = XᵈY",
+            ans: 50,
+            step: "Los hijos varones reciben la Y del padre y la X de la madre (50% XᴰY sano, 50% XᵈY daltónico). Probabilidad = 50%."
+          };
+        } else {
+          currentCalcData = {
+            q: "En el cruce de dos plantas heterocigotas de tallo alto (Aa x Aa), ¿qué porcentaje (%) de la descendencia expresará el fenotipo dominante (tallo alto)?",
+            data: "Genotipos descendencia: 25% AA, 50% Aa, 25% aa",
+            ans: 75,
+            step: "AA (25%) + Aa (50%) = 75% presentan el fenotipo de tallo alto."
+          };
+        }
+      } else {
+        // Generador de estequiometría dinámica
+        const options = ['porcentaje', 'moles_ch4', 'amoniaco'];
+        const chosen = options[Math.floor(Math.random() * options.length)];
+
+        if (chosen === 'porcentaje') {
+          const pct = [2, 4, 5, 10][Math.floor(Math.random() * 4)];
+          const masa = [100, 200, 300, 500][Math.floor(Math.random() * 4)];
+          const ans = (masa * pct) / 100;
+          currentCalcData = {
+            q: `¿Cuántos gramos de Ca₃(PO₄)₂ hay en ${masa} gramos de una solución acuosa al ${pct}% en masa?`,
+            data: `Fórmula: Gramos = (Masa total × %) / 100`,
+            ans: ans,
+            step: `Gramos = (${masa} × ${pct}) / 100 = ${ans} gramos.`
+          };
+        } else if (chosen === 'moles_ch4') {
+          const moles = [2, 4, 5, 8][Math.floor(Math.random() * 4)];
+          const PM = 16.01;
+          const gramos = (moles * PM).toFixed(2);
+          currentCalcData = {
+            q: `¿Cuántos moles de metano (CH₄) equivalen a ${gramos} gramos de dicho gas?`,
+            data: `Pesos atómicos: C = 12.01 g/mol, H = 1.00 g/mol. Peso Molecular CH₄ = 16.01 g/mol`,
+            ans: moles,
+            step: `Moles = Masa en gramos / Peso Molecular = ${gramos} / 16.01 = ${moles} moles.`
+          };
+        } else {
+          const moles = [3, 4, 6, 10][Math.floor(Math.random() * 4)];
+          const PM = 17.03;
+          const ans = parseFloat((moles * PM).toFixed(2));
+          currentCalcData = {
+            q: `¿Cuál es la masa en gramos contenida en ${moles} moles de Amoniaco (NH₃)?`,
+            data: `Pesos atómicos: N = 14.01 g/mol, H = 1.00 g/mol. Peso Molecular NH₃ = 17.03 g/mol`,
+            ans: ans,
+            step: `Gramos = Moles × Peso Molecular = ${moles} × 17.03 = ${ans} gramos.`
+          };
+        }
+      }
+
+      document.getElementById('calc-question-text').innerText = currentCalcData.q;
+      document.getElementById('calc-given-data').innerText = currentCalcData.data;
+    }
+
+    function verifyCalcAnswer() {
+      const val = parseFloat(document.getElementById('calc-user-input').value);
+      const box = document.getElementById('calc-feedback-box');
+      box.classList.remove('hidden');
+
+      if (!isNaN(val) && Math.abs(val - currentCalcData.ans) <= 0.2) {
+        playSound('correct');
+        scoreCount++; streakCount++; updateStatsUI();
+        box.className = "p-4 rounded-xl text-sm leading-relaxed bg-emerald-950/80 border border-emerald-500/50 text-emerald-200";
+        box.innerHTML = `<b>¡Respuesta Correcta! 🎉</b><br>${currentCalcData.step}`;
+      } else {
+        playSound('wrong');
+        errorCount++; streakCount = 0; updateStatsUI();
+        box.className = "p-4 rounded-xl text-sm leading-relaxed bg-rose-950/80 border border-rose-500/50 text-rose-200";
+        box.innerHTML = `<b>Respuesta Incorrecta.</b><br>Valor esperado: <b>${currentCalcData.ans}</b><br>Procedimiento: ${currentCalcData.step}`;
+      }
+    }
+
+    function showVictoryModal() {
+      document.getElementById('summary-score').innerText = scoreCount;
+      document.getElementById('summary-errors').innerText = errorCount;
+      const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+      const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+      document.getElementById('summary-time').innerText = `${mins}:${secs}`;
+      document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    function showGuideModal() { document.getElementById('modal-guide').classList.remove('hidden'); }
+    function closeGuideModal() { document.getElementById('modal-guide').classList.add('hidden'); }
+
+    window.onload = function() { showDashboard(); };
+  </script>
+</body>
+</html>
